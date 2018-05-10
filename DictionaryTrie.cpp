@@ -1,0 +1,450 @@
+#include <bits/stdc++.h>
+#include "util.h"
+#include "DictionaryTrie.h"
+#include <vector>
+#include <iostream>
+#include <queue>
+#include <algorithm>
+
+using namespace std;
+
+/* CONSTRUCTOR
+ * Create a new Dictionary that uses a Trie back end */
+DictionaryTrie::DictionaryTrie(){
+  root = nullptr;
+}
+
+
+
+/* Insert a word with its frequency into the dictionary.
+ * Return true if the word was inserted, and false if it
+ * was not (i.e. it was already in the dictionary or it was
+ * invalid (empty string) */
+bool DictionaryTrie::insert(std::string word, unsigned int freq)
+{
+  
+  //If the string is empty
+  if (word == "") {
+    return false;
+  }
+
+  // Get chars of word and store into vector
+  std::vector<char> charVec(word.length());  
+  for (unsigned int i = 0; i < word.length(); i++) {
+    //charVec.push_back(word.at(i)); // gets letter by letter
+    charVec.at(i) = word.at(i); //gets letter by letter
+  }
+
+  // Loop through letters of word to insert, start looking from root
+  TrieNode* current = root;
+  for (unsigned int j = 0; j < word.length(); j++) {
+      
+      // get place in array depending on char
+      char curr = charVec.at(j);
+      int ascii = int(curr);
+      if (ascii == 32)  // space character
+        ascii = 26;
+      else
+        ascii = ascii - 'a';
+      // spec character: invalid character
+      if (ascii < 0 || ascii > 26) {
+        return false;
+      }
+
+      // Insertion Begins //
+      // Root does not exist (tree is empty)
+      if (!root) {
+        root = new TrieNode();
+        current = root;
+      }
+
+      // LAST character
+      if (j == word.length() - 1) {         
+        
+        // the last character already exists in this sequence
+        if (current->letters[ascii]) {
+          TrieNode* last = current->letters[ascii];
+          
+          // if it is already end of existing word (dup)
+          if (last->isWord == true) {
+            // check freq
+            if (last->freq < freq)
+              last->freq = freq;
+
+            return false;
+          }
+          // bigger word exists, make a stop
+          else {
+            last->fullWord = word;
+            last->lengthOf = word.length();
+            last->isWord = true;
+            last->freq = freq;
+            return true;
+          }
+        }
+
+        // the last char does not exist = make a new node
+        else {
+          TrieNode* newLast = new TrieNode();
+          current->letters[ascii] = newLast;
+          newLast->isWord = true;
+          newLast->freq = freq;
+          newLast->fullWord = word;
+          newLast->lengthOf = word.length();
+          return true;
+        }
+      } // END LAST CHAR CASE
+
+      // regular inserting
+      // check if pointer exists in spot (that letter already exists)
+      if (current->letters[ascii]) {
+        current = current->letters[ascii];
+      }
+      // no pointer existts (letter not in)
+      else {
+        TrieNode* newNode = new TrieNode();
+        current->letters[ascii] = newNode;
+        current = newNode;
+      }
+    }
+  return false;
+
+}
+
+
+
+
+
+/* Return true if word is in the dictionary, and false otherwise */
+bool DictionaryTrie::find(std::string word) const
+{
+  // if no root, trie is empty and return false
+  if (!root) {
+    return false;
+  }
+  // empty string
+  else if (word == "") {
+    return false;
+  }
+  else { 
+    std::vector<char> charVec(word.length());
+
+    // get chars of string
+    for (unsigned int i = 0; i < word.length(); i++) {
+    //   charVec.push_back(word.at(i)); // gets letter by letter
+      charVec.at(i) = word.at(i);
+    } 
+
+    // start at root
+    TrieNode* current = root;
+   
+    for (unsigned int j = 0; j < word.length(); j++) {
+      char curr = charVec.at(j);
+      int ascii = int(curr);
+      if (ascii == 32)  // space character
+        ascii = 26;
+      else
+        ascii = ascii - 'a';
+      // special characters out of bounds
+      if (ascii < 0 || ascii > 26) {
+        return false;
+      }
+
+  //    cout << "VALUE OF CURR IS: " << curr << endl;
+      // check if current is null
+      if (!current) {
+        return false;
+      }
+
+      // at last char
+      if (j == word.length() - 1) { 
+        //ADDED THIS XXX
+      if (current->letters[ascii] == nullptr)
+        return false;
+        //END ADDED XXX
+        if ((current->letters[ascii])->isWord == false) {
+          return false;
+        }
+        else
+          break;
+      }
+
+      // looking at place in char pointer array
+      if (!current->letters[ascii]){
+        return false;
+      }
+      else {
+        current = current->letters[ascii];
+      }
+    }
+    return true;
+  }
+
+
+}
+
+// FIND PREFIX
+TrieNode* DictionaryTrie::findPrefix(string word) {
+  if (word == "") {
+    return nullptr;
+  }
+
+  std::vector<char> charVec(word.length());
+
+  // get chars of string
+  for (unsigned int i = 0; i < word.length(); i++) {
+    charVec.at(i) = word.at(i);
+  } 
+
+  // start at root
+  TrieNode* current = root;
+   
+  for (unsigned int j = 0; j < word.length(); j++) {
+    char curr = charVec.at(j);
+    int ascii = int(curr);
+    if (ascii == 32)  // space character
+      ascii = 26;
+    else
+      ascii = ascii - 'a';
+      // special characters out of bounds
+      if (ascii < 0 || ascii > 26) {
+        return nullptr;
+      }
+
+    // check if current is null
+    if (!current) {
+      return nullptr;
+    }
+
+    // at last char
+    if (j == word.length() - 1) {
+      if (current->letters[ascii]) {
+        current = current->letters[ascii];
+      }
+      break;
+    }
+
+    // looking at place in char pointer array
+    if (!current->letters[ascii]){
+      return nullptr;
+    }
+    else {
+      current = current->letters[ascii];
+    }
+  }
+  return current;
+}
+
+bool sortdes (const pair<string,int> &one, const pair<string,int> &two) {
+  return one.second > two.second;
+}
+
+/* Return up to num_completions of the most frequent completions
+ * of the prefix, such that the completions are words in the dictionary.
+ * These completions should be listed from most frequent to least.
+ * If there are fewer than num_completions legal completions, this
+ * function returns a vector with as many completions as possible.
+ * If no completions exist, then the function returns a vector of size 0.
+ * The prefix itself might be included in the returned words if the prefix
+ * is a word (and is among the num_completions most frequent completions
+ * of the prefix)
+ */
+std::vector<std::string> DictionaryTrie::predictCompletions(std::string prefix, unsigned int num_completions)
+{
+  vector<string> result;                  // vector of strings to be actualy returned
+  if (prefix == "") {
+    return result;   
+  }
+  vector<pair<string,int>> almostThere;   // vector of pairs that will (unless we find higher freqs) be returned
+  queue<TrieNode*> q;                     // queue of trienode* 
+  vector<pair<string, int>> everyWord;    // vector of pairs that holds all words that start with prefix
+  
+  
+  //find the prefix in the MWT
+  TrieNode* current = findPrefix(prefix);
+
+  //maybe check if current is null somewhere
+
+  q.push(current);
+  while (!q.empty()) {
+    current = q.front();
+    q.pop();
+    if (current->isWord == true) {
+        pair<string,int> newP (current->fullWord,current->freq);
+        everyWord.push_back(newP);
+    }
+    // push children to q [run through current's vector and add non nullptrs to queue]
+    for(int i = 0; i < 27; i ++) {
+      if (current->letters[i] != nullptr) {
+        q.push(current->letters[i]);
+      }
+    }
+  }
+
+  // if number of words found is less than num_completions
+  if (everyWord.size() < num_completions) {
+    for (unsigned int k = 0; k < everyWord.size(); k++) {
+      almostThere.push_back( (everyWord.at(k)) ); // XXX get string of each pair in v2 and add to words
+    }
+    sort(almostThere.begin(), almostThere.end(), sortdes);
+    for (unsigned int a = 0; a < almostThere.size(); a++) {
+      result.push_back((almostThere.at(a)).first);
+    }
+    return result;
+  }
+
+  // Regular case
+  for (unsigned int j = 0; j < num_completions; j++) {
+    almostThere.push_back((everyWord.at(j))); // adding first # words
+  }
+  int locMin = findMin(almostThere);           // location of min freq
+  int min = (almostThere.at(locMin)).second;   // actual min
+
+
+  // start loop thru everyWord and replace in result biggger than min
+  for(unsigned int m = num_completions; m < everyWord.size(); m++ ) {
+    pair<string,int> now = everyWord.at(m);
+    if (now.second > min) {
+      // get string of now and replace the string at locMin in result
+      almostThere.at(locMin) = now;
+      // call find min and reset value
+      locMin = findMin(almostThere);
+      min = (almostThere.at(locMin)).second;
+    }
+  
+  }
+
+  vector<pair<string,int>> temp;
+  for (unsigned int l = 0; l < almostThere.size(); l++) {
+    temp.push_back((almostThere.at(l))); // XXX
+  }
+
+  sort(temp.begin(), temp.end(), sortdes);
+  for (unsigned int b = 0; b < temp.size(); b++) {
+    result.push_back((temp.at(b)).first);
+  }
+  
+  return result;
+}
+
+// returns location in v of minimum freq
+int DictionaryTrie::findMin(vector<pair<string, int>> v) {
+  int min = 0;
+  
+  for (unsigned int j = 0; j < v.size(); j++) {
+    pair<string,int> currPair = v.at(j);
+    if ( currPair.second < v.at(min).second ) {
+      min = j;
+    }
+  }
+
+  return min;
+}
+
+
+/*
+ * Return the most similar word of equal length to the query, based
+ * on their Hamming distance. 
+ * In case of ties, return the word with the highest frequency (you may
+ * assume there will always be one should a tie happen.)
+ * In case there isn't any word of equal length to the query in the
+ * trie, return an empty string.
+ */
+std::string DictionaryTrie::checkSpelling(std::string query)
+{
+  // if the word is spelled correctly, return it
+  if (find(query)) {
+    return query;
+  }
+
+  queue<TrieNode*> q;
+  TrieNode* current = root;
+  vector<pair<string,int>> potential;
+
+  q.push(current);
+  while (!q.empty()) {
+    current = q.front();
+    q.pop();
+    if (current->isWord == true) {
+      if (current->lengthOf == query.size()) {
+        pair<string, int> newP (current->fullWord, current->freq);
+        potential.push_back(newP);
+      }
+    }
+
+    //push children to q
+    for (int i = 0; i < 27; i++) {
+      if (current->letters[i] != nullptr) {
+        q.push(current->letters[i]);
+      }
+    }
+  }
+  //now potential is full of all the words of the same length
+  if (potential.empty()) {
+    return "";
+  }
+
+  // finding the smallest hamming distance
+  int locHam = 0;
+  int ham = findHam(potential.at(0).first,query);
+  for (unsigned int j = 0; j < potential.size(); j++) {
+    int currentHam = findHam( (potential.at(j)).first, query );
+    if (currentHam < ham) {
+      locHam = j;
+      ham = currentHam;
+    }
+    else if (currentHam == ham) { // check freq if same hamm
+      if (potential.at(j).second > potential.at(locHam).second) {
+        locHam = j;
+        ham = currentHam;
+      }
+    }
+  }
+  
+  return (potential.at(locHam)).first;
+}
+
+// finding the hamming distance of word against query
+int DictionaryTrie::findHam(string word, string query) {
+  unsigned int hamDist = word.size();
+  // subtract 1 if we come across character that is same
+  for (unsigned int i = 0; i < word.size(); i++) {
+    if (word.at(i) == query.at(i))
+      hamDist = hamDist - 1;
+  }
+  return hamDist;
+} 
+
+
+
+/* Destructor */
+DictionaryTrie::~DictionaryTrie(){
+  deleteAll();
+}
+
+void DictionaryTrie::deleteAll() {
+  // loop through whole array and get node pointer children
+  // call delete all on each pointer (recursive)
+  // delete node when no children left
+
+  queue<TrieNode*> q;
+  TrieNode* current = root;
+
+  q.push(current);
+  while (!q.empty()) {
+    current = q.front();
+    q.pop();
+    
+    //get the children
+    for (int i = 0; i < 27; i++) {
+      if (current->letters[i] != nullptr) {
+        q.push(current->letters[i]);
+      }
+    }
+    delete current;
+  }
+
+
+
+
+}
